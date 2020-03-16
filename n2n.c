@@ -34,7 +34,7 @@ static const uint8_t ipv6_multicast_addr[6] = { 0x33, 0x33, 0x00, 0x00, 0x00, 0x
 SOCKET open_socket(int local_port, int bind_any) {
   SOCKET sock_fd;
   struct sockaddr_in local_address;
-  int sockopt = 1;
+  int sockopt;
 
   if((sock_fd = socket(PF_INET, SOCK_DGRAM, 0))  < 0) {
     traceEvent(TRACE_ERROR, "Unable to create socket [%s][%d]\n",
@@ -46,7 +46,8 @@ SOCKET open_socket(int local_port, int bind_any) {
   /* fcntl(sock_fd, F_SETFL, O_NONBLOCK); */
 #endif
 
-  setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR,(char *)&sockopt, sizeof(sockopt));
+  sockopt = 1;
+  setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
 
   memset(&local_address, 0, sizeof(local_address));
   local_address.sin_family = AF_INET;
@@ -63,6 +64,7 @@ SOCKET open_socket(int local_port, int bind_any) {
 
 static int traceLevel = 2 /* NORMAL */;
 static int useSyslog = 0, syslog_opened = 0;
+static FILE *traceFile = NULL;
 
 int getTraceLevel() {
   return(traceLevel);
@@ -76,9 +78,16 @@ void setUseSyslog(int use_syslog) {
   useSyslog= use_syslog;
 }
 
+void setTraceFile(FILE *f) {
+  traceFile = f;
+}
+
 #define N2N_TRACE_DATESIZE 32
 void traceEvent(int eventTraceLevel, char* file, int line, char * format, ...) {
   va_list va_ap;
+
+  if(traceFile == NULL)
+    traceFile = stdout;
 
   if(eventTraceLevel <= traceLevel) {
     char buf[1024];
@@ -144,16 +153,16 @@ void traceEvent(int eventTraceLevel, char* file, int line, char * format, ...) {
         }
         __android_log_write(eventTraceLevel, "n2n", out_buf);
 #else
-      printf("%s\n", out_buf);
-      fflush(stdout);
+      fprintf(traceFile, "%s\n", out_buf);
+      fflush(traceFile);
 #endif /* #ifdef __ANDROID_NDK__ */
     }
 #else
     /* this is the WIN32 code */
     for(i=strlen(file)-1; i>0; i--) if(file[i] == '\\') { i++; break; };
     snprintf(out_buf, sizeof(out_buf), "%s [%s:%d] %s%s", theDate, &file[i], line, extra_msg, buf);
-    printf("%s\n", out_buf);
-    fflush(stdout);
+    fprintf(traceFile, "%s\n", out_buf);
+    fflush(traceFile);
 #endif
   }
 
@@ -269,12 +278,12 @@ size_t purge_expired_registrations(struct peer_info ** peer_list, time_t* p_last
 
   if((now - (*p_last_purge)) < PURGE_REGISTRATION_FREQUENCY) return 0;
 
-  traceEvent(TRACE_INFO, "Purging old registrations");
+  traceEvent(TRACE_DEBUG, "Purging old registrations");
 
   num_reg = purge_peer_list(peer_list, now-REGISTRATION_TIMEOUT);
 
   (*p_last_purge) = now;
-  traceEvent(TRACE_INFO, "Remove %ld registrations", num_reg);
+  traceEvent(TRACE_DEBUG, "Remove %ld registrations", num_reg);
 
   return num_reg;
 }

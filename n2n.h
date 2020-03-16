@@ -42,7 +42,9 @@
 #undef N2N_HAVE_DAEMON
 #undef N2N_HAVE_SETUID
 #else
+#ifndef CMAKE_BUILD
 #include "config.h"
+#endif
 #endif
 
 #define PACKAGE_BUILDDATE (__DATE__ " " __TIME__)
@@ -164,7 +166,11 @@ typedef struct tuntap_dev {
  * same value if they are to understand each other. */
 #define N2N_COMPRESSION_ENABLED 1
 
-#define DEFAULT_MTU   1400
+#define DEFAULT_MTU   1290
+
+/** Uncomment this to enable the MTU check, then try to ssh to generate a fragmented packet. */
+/** NOTE: see doc/MTU.md for an explanation on the 1400 value */
+//#define MTU_ASSERT_VALUE 1400
 
 /** Common type used to hold stringified IP addresses. */
 typedef char ipstr_t[32];
@@ -202,13 +208,16 @@ typedef struct n2n_edge_conf {
   n2n_sn_name_t       sn_ip_array[N2N_EDGE_NUM_SUPERNODES];
   n2n_community_t     community_name;         /**< The community. 16 full octets. */
   n2n_transform_t     transop_id;             /**< The transop to use. */
-  uint8_t             re_resolve_supernode_ip;
   uint8_t             dyn_ip_mode;            /**< Interface IP address is dynamically allocated, eg. DHCP. */
   uint8_t             allow_routing;          /**< Accept packet no to interface address. */
   uint8_t             drop_multicast;         /**< Multicast ethernet addresses. */
+  uint8_t             disable_pmtu_discovery; /**< Disable the Path MTU discovery. */
+  uint8_t             allow_p2p;              /**< Allow P2P connection */
   uint8_t             sn_num;                 /**< Number of supernode addresses defined. */
+  uint8_t             tos;                    /** TOS for sent packets */
   char                *encrypt_key;
   int                 register_interval;      /**< Interval for supernode registration, also used for UDP NAT hole punching. */
+  int                 register_ttl;           /**< TTL for registration packet when UDP NAT hole punching through supernode. */
   int                 local_port;
   int                 mgmt_port;
 } n2n_edge_conf_t;
@@ -255,6 +264,7 @@ int n2n_transop_aes_cbc_init(const n2n_edge_conf_t *conf, n2n_trans_op_t *ttt);
 /* Log */
 void setTraceLevel(int level);
 void setUseSyslog(int use_syslog);
+void setTraceFile(FILE *f);
 int getTraceLevel();
 void traceEvent(int eventTraceLevel, char* file, int line, char * format, ...);
 

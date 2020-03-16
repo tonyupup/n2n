@@ -104,11 +104,11 @@ Running edge as a service
 
 edge can also be run as a service instead of cli:
 
-1. Edit `/etc/n2n/edge` with your custom options. See `/etc/n2n/edge.conf.sample`.
+1. Edit `/etc/n2n/edge.conf` with your custom options. See `/etc/n2n/edge.conf.sample`.
 2. Start the service: `sudo systemctl start edge`
 3. Optionally enable edge start on boot: `sudo systemctl enable edge`
 
-You can run multiple edge service instances by creating `/etc/n2n/edge-instance1` and
+You can run multiple edge service instances by creating `/etc/n2n/edge-instance1.conf` and
 starting it with `sudo systemctl start edge@instance1`.
 
 IPv6 Support
@@ -133,7 +133,7 @@ two edge nodes, but it will now that edge A is talking with edge B.
 Recently AES encryption support has been implemented, which increases both security and performance,
 so it is recommended to enable it on all the edge nodes by specifying the `-A` option.
 
-A benchmark of the encryption methods is available when compiled from source with `./benchmark`.
+A benchmark of the encryption methods is available when compiled from source with `tools/n2n-benchmark`.
 
 Contribution
 ------------
